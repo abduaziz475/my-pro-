@@ -199,10 +199,25 @@ function App() {
   const [slide, setSlide] = useState(0);
   const [message, setMessage] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderData, setOrderData] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    payment: "Cash",
+  });
 
   useEffect(() => {
     document.body.className = darkMode ? "dark-mode" : "";
   }, [darkMode]);
+
+  useEffect(() => {
+    document.body.style.overflow = cartOpen || orderOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [cartOpen, orderOpen]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -260,7 +275,7 @@ function App() {
       ];
     });
 
-    showMessage(`${product.name} savatga qo'shildi`);
+    showMessage("Mahsulot savatga qo'shildi");
   };
 
   const increaseQuantity = (id) => {
@@ -330,21 +345,37 @@ function App() {
       return;
     }
 
-    alert(
-      `BUYURTMA QABUL QILINDI!\n\n` +
-        `Mahsulotlar: ${totalItems} dona\n` +
-        `Jami summa: $${totalPrice.toFixed(2)}\n\n` +
-        `Tez orada siz bilan bog'lanamiz.`
-    );
+    setOrderOpen(true);
+  };
 
+  const submitOrder = (event) => {
+    event.preventDefault();
+
+    if (!orderData.name.trim() || !orderData.phone.trim() || !orderData.address.trim()) {
+      showMessage("Barcha maydonlarni to'ldiring");
+      return;
+    }
+
+    setOrderSuccess(true);
     setCart([]);
     setCartOpen(false);
+  };
+
+  const closeOrder = () => {
+    setOrderOpen(false);
+    setOrderSuccess(false);
+    setOrderData({
+      name: "",
+      phone: "",
+      address: "",
+      payment: "Cash",
+    });
   };
 
   const subscribe = (event) => {
     event.preventDefault();
 
-    alert("Siz yangiliklarga muvaffaqiyatli obuna bo'ldingiz!");
+    showMessage("Siz yangiliklarga muvaffaqiyatli obuna bo'ldingiz!");
     event.target.reset();
   };
 
@@ -389,7 +420,10 @@ function App() {
             placeholder="Search for tech gadgets, ideas and more"
           />
 
-          <button>
+          <button
+            type="button"
+            onClick={openProducts}
+          >
             Search
           </button>
         </div>
@@ -422,7 +456,9 @@ function App() {
             Shop
           </button>
 
-          <button>
+          <button
+            onClick={() => showMessage("Account bo'limi tez orada ishga tushadi")}
+          >
             Account
           </button>
 
@@ -754,6 +790,12 @@ function App() {
                   <img
                     src={product.image}
                     alt={product.name}
+                    onError={(event) => {
+                      if (!event.currentTarget.dataset.fallback) {
+                        event.currentTarget.dataset.fallback = "true";
+                        event.currentTarget.src = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=90";
+                      }
+                    }}
                   />
 
                   <button
@@ -896,7 +938,7 @@ function App() {
               </h2>
             </div>
 
-            <button>
+            <button onClick={openProducts}>
               See more ideas →
             </button>
 
@@ -913,6 +955,12 @@ function App() {
                 <img
                   src={idea.image}
                   alt={idea.title}
+                  onError={(event) => {
+                    if (!event.currentTarget.dataset.fallback) {
+                      event.currentTarget.dataset.fallback = "true";
+                      event.currentTarget.src = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=90";
+                    }
+                  }}
                 />
 
                 <div className="idea-content">
@@ -925,7 +973,12 @@ function App() {
                     {idea.count}
                   </span>
 
-                  <button>
+                  <button
+                    onClick={() => {
+                      setSearch(idea.title.split(" ")[0]);
+                      openProducts();
+                    }}
+                  >
                     →
                   </button>
 
@@ -1030,26 +1083,26 @@ function App() {
 
         <div>
           <h4>Shop</h4>
-          <p>All Products</p>
-          <p>Audio</p>
-          <p>Wearables</p>
-          <p>Accessories</p>
+          <p onClick={openProducts}>All Products</p>
+          <p onClick={() => { setActiveCategory("Audio"); openProducts(); }}>Audio</p>
+          <p onClick={() => { setActiveCategory("Wearables"); openProducts(); }}>Wearables</p>
+          <p onClick={() => { setActiveCategory("Accessories"); openProducts(); }}>Accessories</p>
         </div>
 
         <div>
           <h4>Company</h4>
-          <p>About Us</p>
-          <p>Contact</p>
-          <p>Careers</p>
-          <p>Privacy</p>
+          <p onClick={() => showMessage("TechVerse haqida ma'lumot")}>About Us</p>
+          <p onClick={() => showMessage("Aloqa: support@techverse.com")}>Contact</p>
+          <p onClick={() => showMessage("Bo'sh ish o'rinlari tez orada")}>Careers</p>
+          <p onClick={() => showMessage("Maxfiylik siyosati")}>Privacy</p>
         </div>
 
         <div>
           <h4>Customer Care</h4>
-          <p>Shipping</p>
-          <p>Returns</p>
-          <p>Warranty</p>
-          <p>Support</p>
+          <p onClick={() => showMessage("Yetkazib berish: bepul")}>Shipping</p>
+          <p onClick={() => showMessage("30 kun ichida qaytarish mumkin")}>Returns</p>
+          <p onClick={() => showMessage("Kafolat xizmati mavjud")}>Warranty</p>
+          <p onClick={() => showMessage("Support: 24/7")}>Support</p>
         </div>
 
       </footer>
@@ -1265,6 +1318,141 @@ function App() {
 
         </div>
 
+      )}
+
+      {orderOpen && (
+        <div className="order-overlay" onClick={closeOrder}>
+          <div
+            className="order-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {!orderSuccess ? (
+              <>
+                <div className="order-modal-header">
+                  <div>
+                    <small>CHECKOUT</small>
+                    <h2>Buyurtma berish</h2>
+                    <p>Yetkazib berish ma'lumotlarini kiriting.</p>
+                  </div>
+                  <button className="modal-close" onClick={closeOrder} type="button">×</button>
+                </div>
+
+                <div className="order-total-box">
+                  <span>Jami to'lov</span>
+                  <strong>${totalPrice.toFixed(2)}</strong>
+                </div>
+
+                <form className="order-form" onSubmit={submitOrder}>
+                  <label>
+                    Ism va familiya
+                    <input
+                      type="text"
+                      value={orderData.name}
+                      onChange={(event) =>
+                        setOrderData((current) => ({ ...current, name: event.target.value }))
+                      }
+                      placeholder="Ismingizni kiriting"
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Telefon raqam
+                    <input
+                      type="tel"
+                      value={orderData.phone}
+                      onChange={(event) =>
+                        setOrderData((current) => ({ ...current, phone: event.target.value }))
+                      }
+                      placeholder="+998 90 123 45 67"
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Manzil
+                    <textarea
+                      value={orderData.address}
+                      onChange={(event) =>
+                        setOrderData((current) => ({ ...current, address: event.target.value }))
+                      }
+                      placeholder="Uy, ko'cha, shahar..."
+                      rows="3"
+                      required
+                    />
+                  </label>
+
+                  <fieldset>
+                    <legend>To'lov usuli</legend>
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="Cash"
+                        checked={orderData.payment === "Cash"}
+                        onChange={(event) =>
+                          setOrderData((current) => ({ ...current, payment: event.target.value }))
+                        }
+                      />
+                      <span>Naqd pul</span>
+                    </label>
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="Card"
+                        checked={orderData.payment === "Card"}
+                        onChange={(event) =>
+                          setOrderData((current) => ({ ...current, payment: event.target.value }))
+                        }
+                      />
+                      <span>Karta orqali</span>
+                    </label>
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="Online"
+                        checked={orderData.payment === "Online"}
+                        onChange={(event) =>
+                          setOrderData((current) => ({ ...current, payment: event.target.value }))
+                        }
+                      />
+                      <span>Onlayn to'lov</span>
+                    </label>
+                  </fieldset>
+
+                  <button className="confirm-order" type="submit">
+                    Buyurtmani tasdiqlash
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="order-success">
+                <div className="success-icon">✓</div>
+                <small>BUYURTMA QABUL QILINDI</small>
+                <h2>Rahmat, {orderData.name}!</h2>
+                <p>
+                  Buyurtmangiz qabul qilindi. Tez orada
+                  <strong> {orderData.phone}</strong> raqamiga bog'lanamiz.
+                </p>
+                <div className="success-info">
+                  <span>To'lov</span>
+                  <strong>
+                    {orderData.payment === "Cash"
+                      ? "Naqd pul"
+                      : orderData.payment === "Card"
+                      ? "Karta orqali"
+                      : "Onlayn to'lov"}
+                  </strong>
+                </div>
+                <button className="confirm-order" onClick={closeOrder} type="button">
+                  Yopish
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
     </div>
